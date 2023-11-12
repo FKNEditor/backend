@@ -1,0 +1,49 @@
+version: '3.7'
+services:
+  postgresdb:
+    container_name: postgresdb
+    image: postgres:14-alpine
+    ports:
+      - 6969:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=admin
+      - POSTGRES_DB=db
+
+  minio:
+    container_name: minio
+    image: minio/minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_storage:/data
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: password
+    command: server --console-address ":9001" /data
+
+  project-backend:
+    image: nishitproject/backend:backend-dev
+    container_name:  backend
+    restart: always
+    environment:
+      DATABASE_URL: postgresdb
+      DATABASE_USER: admin
+      DATBASE_PASSWORD: password
+      UNI_KEYCLOAK_URL: http://127.0.0.1:9999
+      ITPROJ_MINIO_URL: http://minio:9000
+      ITPROJ_MINIO_USER: admin
+      ITPROJ_MINIO_PASS: password
+      PY_SCRIPT_DIR: /deployments/pyscripts/
+    ports:
+      - 8181:8080
+    depends_on:
+      - postgresdb
+      - minio
+
+volumes:
+  postgres_data:
+  minio_storage: {}
